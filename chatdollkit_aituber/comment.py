@@ -1,18 +1,37 @@
 import multiprocessing
 from typing import Callable, Optional
-import pytchat
+from TikTokLive import TikTokLiveClient
+from TikTokLive.events import ConnectEvent, CommentEvent
 
+class Author:
+    def __init__(self, name: str):
+        self.name = name
+
+class Comment:
+    def __init__(self, author: Author, message: str):
+        self.author = author
+        self.message = message
 
 class CommentMonitor:
     def __init__(self, process_comment: Callable):
         self.process_comment = process_comment
 
+    async def on_connect(self, event: ConnectEvent) -> None:
+        print(f"Connected to @{event.unique_id} (Room ID: {self.client.room_id}")
+    async def on_comment(self, event: CommentEvent) -> None:
+        print(f"{event.user.nickname} -> {event.comment}")
+        if not event.comment.startswith('@'):
+          author = Author(name=event.user.nickname)
+          c = Comment(author=author, message=event.comment)
+          self.process_comment(c)
     def start_monitoring(self, video_id):
-        chat = pytchat.create(video_id=video_id)
-        while chat.is_alive():
-            for c in chat.get().sync_items():
-                self.process_comment(c)
+        # Create the client
+        self.client: TikTokLiveClient = TikTokLiveClient(unique_id=video_id)
+        print(f"start_monitoring {video_id}")
 
+        self.client.add_listener(ConnectEvent, self.on_connect)
+        self.client.add_listener(CommentEvent, self.on_comment)
+        self.client.run()
 
 class CommentMonitorManager:
     def __init__(self, process_comment: Callable):
