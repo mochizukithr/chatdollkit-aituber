@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  chatdollkit-aituber:
+    image: chatdollkit-aituber:latest
+    container_name: chatdollkit-aituber
+    network_mode: bridge
+    ports:
+      - "8000:8000"
+    environment:
+      - CHATDOLLKITAITUBER_HOST=192.168.0.10
+      - CHATDOLLKITAITUBER_PORT=8888
+    restart: unless-stopped
