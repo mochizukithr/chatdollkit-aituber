@@ -7,8 +7,8 @@ def get_router(comment_monitor_manager: CommentMonitorManager) -> APIRouter:
     api_router = APIRouter()
 
     @api_router.post("/comment/start", tags=["YouTube Comment"])
-    def post_comment_start(video_id: str):
-        success = comment_monitor_manager.start(video_id)
+    def post_comment_start(video_id: str,session_id: str):
+        success = comment_monitor_manager.start(video_id,session_id)
         return JSONResponse(content={"status": "started" if success else "already_running"})
 
     @api_router.post("/comment/stop", tags=["YouTube Comment"])

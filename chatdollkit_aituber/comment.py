@@ -27,19 +27,24 @@ class CommentMonitor:
           self.process_comment(c)
 
     async def on_join(self, event: JoinEvent) -> None:
-        print(f"Join -> {event.user.nickname}")
+        # print(f"Join -> {event.user.nickname}")
         author = Author(name=event.user.nickname)
         c = Comment(author=author, message="こんにちは")
         self.process_comment(c)
 
-    def start_monitoring(self, video_id):
+    def start_monitoring(self, video_id,session_id):
         # Create the client
-        self.client: TikTokLiveClient = TikTokLiveClient(unique_id=video_id)
         print(f"start_monitoring {video_id}")
+        self.client: TikTokLiveClient = TikTokLiveClient(unique_id=video_id)
+
+        print(f"session_id: {session_id}")
+        self.client.web.set_session_id(session_id)
+
 
         self.client.add_listener(ConnectEvent, self.on_connect)
         self.client.add_listener(CommentEvent, self.on_comment)
         self.client.add_listener(JoinEvent, self.on_join)
+
         self.client.run()
 
 class CommentMonitorManager:
@@ -48,16 +53,16 @@ class CommentMonitorManager:
         self.process: Optional[multiprocessing.Process] = None
         self.video_id: Optional[str] = None
 
-    def run_monitor(self, video_id: str):
-        self.comment_monitor.start_monitoring(video_id)
+    def run_monitor(self, video_id: str,session_id:str):
+        self.comment_monitor.start_monitoring(video_id,session_id)
 
-    def start(self, video_id: str) -> bool:
+    def start(self, video_id: str,session_id:str) -> bool:
         if self.process and self.process.is_alive():
             return False
 
         self.process = multiprocessing.Process(
             target=self.run_monitor,
-            args=(video_id,)
+            args=(video_id,session_id)
         )
         self.process.start()
         self.video_id = video_id
