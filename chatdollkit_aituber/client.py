@@ -52,7 +52,7 @@ class ChatdollKitClient:
             }
             if payloads:
                 message_dict["Payloads"] = payloads
-            message = json.dumps(message_dict)
+            message = json.dumps(message_dict, ensure_ascii=False)
 
             self.client_socket.sendall((message + "\n").encode("utf-8"))
             print(f"Message sent: {message}")
