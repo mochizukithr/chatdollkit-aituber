@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   chatdollkit-aituber:
@@ -6,8 +6,10 @@ services:
     container_name: chatdollkit-aituber
     network_mode: bridge
     ports:
-      - "8000:8000"
+      - "8000:80"
     environment:
       - CHATDOLLKITAITUBER_HOST=192.168.0.10
       - CHATDOLLKITAITUBER_PORT=8888
     restart: unless-stopped
+    stdin_open: true
+    tty: true
