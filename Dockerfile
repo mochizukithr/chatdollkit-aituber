@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 python:3.11
+FROM python:3.13
 WORKDIR /code
 
 COPY ./requirements.txt /code/requirements.txt
