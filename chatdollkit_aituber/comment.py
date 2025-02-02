@@ -2,6 +2,7 @@ import multiprocessing
 from typing import Callable, Optional
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import ConnectEvent, CommentEvent,JoinEvent
+from TikTokLive.client.logger import LogLevel
 
 class Author:
     def __init__(self, name: str):
@@ -40,10 +41,11 @@ class CommentMonitor:
         print(f"session_id: {session_id}")
         self.client.web.set_session_id(session_id)
 
-
         self.client.add_listener(ConnectEvent, self.on_connect)
         self.client.add_listener(CommentEvent, self.on_comment)
         self.client.add_listener(JoinEvent, self.on_join)
+
+        # self.client.logger.setLevel(LogLevel.DEBUG.value)
 
         self.client.run()
 
