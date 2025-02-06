@@ -1,12 +1,12 @@
 [project]
 name = "chatdollkit-aituber"
-version = "0.1.0"
+version = "0.1.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.6",
     "pytchat>=0.5.5",
-    "tiktoklive==6.2.0",
+    "tiktoklive==6.4.1.post1",
     "uvicorn>=0.34.0",
 ]

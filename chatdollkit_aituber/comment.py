@@ -1,7 +1,7 @@
 import multiprocessing
 from typing import Callable, Optional
 from TikTokLive import TikTokLiveClient
-from TikTokLive.events import ConnectEvent, CommentEvent,JoinEvent
+from TikTokLive.events import ConnectEvent, CommentEvent,GiftEvent,JoinEvent
 from TikTokLive.client.logger import LogLevel
 
 class Author:
@@ -26,6 +26,32 @@ class CommentMonitor:
           author = Author(name=event.user.nickname)
           c = Comment(author=author, message=event.comment)
           self.process_comment(c)
+    async def on_gift(self, event: GiftEvent) -> None:
+        print(f"{event.user.nickname} -> {event.comment}")
+        if not event.comment.startswith('@'):
+          author = Author(name=event.user.nickname)
+          c = Comment(author=author, message=event.comment)
+          self.process_comment(c)
+
+    async def on_gift(self,event: GiftEvent):
+        # Streakable gift & streak is over
+        if event.gift.streakable and not event.streaking:
+            # print(f"{event.user.unique_id} sent {event.repeat_count}x \"{event.gift.name}\"")
+            author = Author(name=event.user.nickname)
+            message = f"!gift {event.gift.name}を{event.repeat_count}個プレゼントします"
+            print(message)
+            c = Comment(author=author, message=message)
+            self.process_comment(c)
+
+        # Non-streakable gift
+        elif not event.gift.streakable:
+            # print(f"{event.user.unique_id} sent \"{event.gift.name}\"")
+            author = Author(name=event.user.nickname)
+            message = f"!gift {event.gift.name}を{event.repeat_count}個プレゼントします"
+            print(message)
+            c = Comment(author=author, message=message)
+            self.process_comment(c)
+
 
     async def on_join(self, event: JoinEvent) -> None:
         # print(f"Join -> {event.user.nickname}")
@@ -43,6 +69,7 @@ class CommentMonitor:
 
         self.client.add_listener(ConnectEvent, self.on_connect)
         self.client.add_listener(CommentEvent, self.on_comment)
+        self.client.add_listener(GiftEvent, self.on_gift)
         self.client.add_listener(JoinEvent, self.on_join)
 
         # self.client.logger.setLevel(LogLevel.DEBUG.value)
