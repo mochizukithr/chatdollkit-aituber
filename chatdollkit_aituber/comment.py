@@ -21,7 +21,7 @@ class CommentMonitor:
         print(f"Connected to @{event.unique_id} (Room ID: {self.client.room_id}")
 
     async def on_comment(self, event: CommentEvent) -> None:
-        print(f"{event.user.nickname} -> {event.comment}")
+        # print(f"{event.user.nickname} -> {event.comment}")
         if not event.comment.startswith('@'):
           author = Author(name=event.user.nickname)
           c = Comment(author=author, message=event.comment)
@@ -54,10 +54,15 @@ class CommentMonitor:
 
 
     async def on_join(self, event: JoinEvent) -> None:
-        # print(f"Join -> {event.user.nickname}")
-        author = Author(name=event.user.nickname)
-        c = Comment(author=author, message="こんにちは")
-        self.process_comment(c)
+        # print(f"Join -> {event.user}")
+        if(event.user.member_level is not None or event.user.is_follower or event.user.is_following or event.user.anchor_level.level > 5):
+            print(f"挨拶対象　：{event.user.member_level,event.user.is_follower,event.user.is_following,event.user.anchor_level.level,event.user.follow_status}:{event.user.nickname}")
+            # フォロワーやメンレベ、ギフレベ高い人に挨拶
+            author = Author(name=event.user.nickname)
+            c = Comment(author=author, message="こんにちは")
+            # self.process_comment(c)
+        else:
+            print(f"挨拶対象外：{event.user.member_level,event.user.is_follower,event.user.is_following,event.user.anchor_level.level,event.user.follow_status}:{event.user.nickname}")
 
     def start_monitoring(self, video_id,session_id):
         # Create the client
