@@ -1,8 +1,9 @@
 import multiprocessing
 from typing import Callable, Optional
 from TikTokLive import TikTokLiveClient
-from TikTokLive.events import ConnectEvent, CommentEvent,GiftEvent,JoinEvent
+from TikTokLive.events import ConnectEvent, CommentEvent,GiftEvent,JoinEvent,LikeEvent
 from TikTokLive.client.logger import LogLevel
+from .utility import LikeTracker
 
 class Author:
     def __init__(self, name: str):
@@ -16,6 +17,7 @@ class Comment:
 class CommentMonitor:
     def __init__(self, process_comment: Callable):
         self.process_comment = process_comment
+        self.like_count = LikeTracker()
 
     async def on_connect(self, event: ConnectEvent) -> None:
         print(f"Connected to @{event.unique_id} (Room ID: {self.client.room_id}")
@@ -54,15 +56,42 @@ class CommentMonitor:
 
 
     async def on_join(self, event: JoinEvent) -> None:
-        # print(f"Join -> {event.user}")
-        if(event.user.member_level is not None or event.user.is_follower or event.user.is_following or event.user.anchor_level.level > 5):
-            print(f"挨拶対象　：{event.user.member_level,event.user.is_follower,event.user.is_following,event.user.anchor_level.level,event.user.follow_status}:{event.user.nickname}")
-            # フォロワーやメンレベ、ギフレベ高い人に挨拶
+
+        if(event.user.member_level or event.user.member_rank):
+            self.client.logger.info(f"挨拶対象（友達）：{event.user.follow_info.follow_status}-{event.user.member_level}-{event.user.member_rank}:{event.user.nickname}")
+            author = Author(name=f"{event.user.nickname}")
+            c = Comment(author=author, message="ただいま！")
+            self.process_comment(c)
+        elif(event.user.gifter_level is not None and event.user.gifter_level > 10):
+            self.client.logger.info(f"挨拶対象（ギフレベ高）　：{event.user.gifter_level}:{event.user.nickname}")
+            # ギフレベ高い人に挨拶
+            author = Author(name=event.user.nickname)
+            c = Comment(author=author, message="お邪魔します")
+            self.process_comment(c)
+        elif(event.user.follow_info.follow_status > 0):
+            # self.client.logger.info(f"挨拶対象（知り合い）：{event.user.follow_info.follow_status}-{event.user.member_level}-{event.user.member_rank}:{event.user.nickname}")
+            # 知り合いに挨拶
             author = Author(name=event.user.nickname)
             c = Comment(author=author, message="こんにちは")
             # self.process_comment(c)
         else:
-            print(f"挨拶対象外：{event.user.member_level,event.user.is_follower,event.user.is_following,event.user.anchor_level.level,event.user.follow_status}:{event.user.nickname}")
+            self.client.logger.info(f"Join -> {event.user.pay_grade.level}-{event.user.gifter_level}-{event.user.follow_info.follow_status}:{event.user.nickname}")
+            # print(f"挨拶対象外：{event.user.member_level,event.user.is_follower,event.user.is_following,event.user.anchor_level.level,event.user.follow_status}:{event.user.nickname}")
+
+    async def on_like(self,event: LikeEvent) -> None:
+        # print(f"{event.user.unique_id, event.user.nickname, event.count}")
+        self.like_count.add_like(user_id=event.user.unique_id, display_name=event.user.nickname, like_count=event.count)
+        if(self.like_count.get_likes(event.user.unique_id) is not None):
+            current_likes = self.like_count.get_likes(event.user.unique_id)[1]
+            if(current_likes > 100):
+                self.client.logger.info(f"Like -> {current_likes}:{self.like_count.get_likes(event.user.unique_id)[0]}")
+                author = Author(name=self.like_count.get_likes(event.user.unique_id)[0])
+                message = f"ライブいいねを{current_likes}回したよ！"
+                # print(f"{message}:{self.like_count.get_likes(event.user.unique_id)[0]}")
+                c = Comment(author=author, message=message)
+
+                self.like_count.add_like(user_id=event.user.unique_id, display_name=event.user.nickname, like_count=-current_likes)
+                self.process_comment(c)
 
     def start_monitoring(self, video_id,session_id):
         # Create the client
@@ -76,8 +105,9 @@ class CommentMonitor:
         self.client.add_listener(CommentEvent, self.on_comment)
         self.client.add_listener(GiftEvent, self.on_gift)
         self.client.add_listener(JoinEvent, self.on_join)
+        self.client.add_listener(LikeEvent, self.on_like)
 
-        # self.client.logger.setLevel(LogLevel.DEBUG.value)
+        self.client.logger.setLevel(LogLevel.INFO.value)
 
         self.client.run()
 
